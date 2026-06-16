@@ -1,0 +1,318 @@
+---
+const cards = [
+  {
+    name: "get started",
+    desc: "Install veilens on your Mac, index a folder of PDFs/CSVs/Markdown, and ask your first question — one command per step.",
+    href: "/get-started",
+    tag: "install",
+  },
+  {
+    name: "walkthrough",
+    desc: "A start-to-finish example: drop a folder of bank statements on your Mac and ask \"how much did I spend on travel last year?\" — answered locally, the data never leaving the machine.",
+    href: "/walkthrough",
+    tag: "example",
+  },
+  {
+    name: "headgate",
+    desc: "The privacy harness underneath: a frontier model is treated as an untrusted code generator, not a data processor. It writes code; the code runs locally in a sandbox that can't phone home.",
+    href: "/headgate",
+    tag: "the harness",
+  },
+  {
+    name: "deep dives",
+    desc: "How a question becomes a sandboxed program the frontier model writes but never gets to run against your data — with the actual generated Mojo.",
+    href: "/deep-dives",
+    tag: "under the hood",
+  },
+  {
+    name: "the engine",
+    desc: "veilens runs on millrace — a from-scratch, pure-Mojo GPU inference engine for Apple Silicon. The local model that reads your real data is served there.",
+    href: "https://millrace.app",
+    tag: "millrace ↗",
+  },
+];
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="generator" content={Astro.generator} />
+    <title>veilens — a private document vault on your Mac</title>
+    <meta
+      name="description"
+      content="veilens is a private, on-device document vault for Apple Silicon. Index your PDFs, CSVs, and notes and ask open-ended questions — answered by a frontier model that writes code but never sees your data."
+    />
+    <meta property="og:title" content="veilens" />
+    <meta
+      property="og:description"
+      content="A private document vault on your Mac — ask open-ended questions of your own files, answered locally, the data never leaving the machine."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://veilens.app" />
+  </head>
+  <body>
+    <main>
+      <section class="hero">
+        <svg class="wheel" viewBox="0 0 100 100" aria-hidden="true">
+          <g fill="none" stroke="currentColor" stroke-linecap="round" class="wheel-line">
+            <g stroke-width="2.6">
+              <line x1="50" y1="50" x2="50" y2="22" />
+              <line x1="50" y1="50" x2="70" y2="30" />
+              <line x1="50" y1="50" x2="78" y2="50" />
+              <line x1="50" y1="50" x2="70" y2="70" />
+              <line x1="50" y1="50" x2="50" y2="78" />
+              <line x1="50" y1="50" x2="30" y2="70" />
+              <line x1="50" y1="50" x2="22" y2="50" />
+              <line x1="50" y1="50" x2="30" y2="30" />
+            </g>
+            <circle cx="50" cy="50" r="28" stroke-width="4.5" />
+          </g>
+          <g fill="#cedae6">
+            <rect x="46.5" y="76" width="7" height="5.5" rx="1" />
+            <rect x="30" y="70" width="7" height="5.5" rx="1" transform="rotate(-40 33.5 72.75)" />
+            <rect x="63" y="70" width="7" height="5.5" rx="1" transform="rotate(40 66.5 72.75)" />
+          </g>
+          <circle cx="50" cy="50" r="6.5" fill="#f5f8fc" />
+          <circle cx="50" cy="50" r="2.8" fill="#ff7a1c" />
+        </svg>
+
+        <h1>veilens</h1>
+        <p class="tagline">
+          A private document vault on your Mac.
+        </p>
+        <p class="lede">
+          Index your own PDFs, CSVs, and notes and ask open-ended questions —
+          <strong>"how much did I spend on travel last year?"</strong>,
+          <strong>"when does my insurance renew?"</strong> — answered on Apple
+          Silicon, with the documents never leaving the machine.
+        </p>
+        <p class="lede">
+          The trick is <a href="/headgate">headgate</a>: the powerful frontier
+          model is an <strong>untrusted code generator, not a data
+          processor</strong>. It sees only the <em>shape</em> of your vault and
+          writes a program; the program runs locally in a sandbox that can't phone
+          home, and a small <a href="https://millrace.app">on-device model</a> is
+          the only thing that ever reads the real text. Your data never reaches
+          the frontier model.
+        </p>
+
+        <p class="experimental">
+          ⚠︎ <strong>Experimental.</strong> veilens is an early research project —
+          the design and APIs are still moving and it isn't ready to trust with
+          data that truly matters yet.
+        </p>
+
+        <div class="cta">
+          <a class="btn primary" href="/get-started">Get started</a>
+          <a class="btn" href="/walkthrough">Walkthrough</a>
+          <a class="btn" href="https://github.com/veilensapp">View on GitHub</a>
+        </div>
+      </section>
+
+      <section class="projects">
+        {
+          cards.map((r) => (
+            <a class="card" href={r.href}>
+              <div class="card-head">
+                <span class="card-name">{r.name}</span>
+                <span class="card-tag">{r.tag}</span>
+              </div>
+              <p class="card-desc">{r.desc}</p>
+            </a>
+          ))
+        }
+      </section>
+
+      <footer>
+        <span>© veilens</span>
+        <span class="dot">·</span>
+        <a href="https://github.com/veilensapp">github.com/veilensapp</a>
+        <span class="dot">·</span>
+        <span>runs on <a href="https://millrace.app">millrace</a></span>
+      </footer>
+    </main>
+  </body>
+</html>
+
+<style is:global>
+  :root {
+    --bg-top: #284a5c;
+    --bg-bot: #122632;
+    --ink: #eaf1f6;
+    --muted: #9fb4c2;
+    --accent: #ff7a1c;
+    --accent-lite: #ffb05c;
+    --line: rgba(159, 180, 194, 0.18);
+    --card: rgba(255, 255, 255, 0.035);
+    --card-hover: rgba(255, 255, 255, 0.07);
+  }
+
+  * { box-sizing: border-box; }
+
+  html { color-scheme: dark; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    color: var(--ink);
+    background:
+      radial-gradient(1200px 600px at 50% -10%, rgba(255, 122, 28, 0.10), transparent 60%),
+      linear-gradient(180deg, var(--bg-top), var(--bg-bot));
+    background-attachment: fixed;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto,
+      Helvetica, Arial, sans-serif;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  a { color: var(--accent-lite); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  main {
+    max-width: 880px;
+    margin: 0 auto;
+    padding: clamp(2.5rem, 6vw, 6rem) 1.5rem 3rem;
+  }
+
+  /* ── hero ───────────────────────────────────────────────── */
+  .hero { text-align: center; }
+
+  .wheel {
+    width: clamp(96px, 18vw, 132px);
+    height: clamp(96px, 18vw, 132px);
+    color: #f5f8fc;
+    filter: drop-shadow(0 6px 18px rgba(0, 0, 0, 0.35));
+  }
+
+  h1 {
+    font-size: clamp(2.8rem, 9vw, 4.5rem);
+    letter-spacing: -0.03em;
+    margin: 0.4rem 0 0;
+    font-weight: 700;
+    background: linear-gradient(180deg, #ffffff, #cedae6);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .tagline {
+    font-size: clamp(1.15rem, 3.5vw, 1.5rem);
+    font-weight: 600;
+    margin: 0.6rem 0 0;
+    color: var(--ink);
+  }
+
+  .lede {
+    max-width: 38rem;
+    margin: 1rem auto 0;
+    color: var(--muted);
+    font-size: 1.05rem;
+  }
+  .lede strong { color: var(--ink); }
+
+  .experimental {
+    max-width: 38rem;
+    margin: 1.5rem auto 0;
+    color: var(--muted);
+    font-size: 0.92rem;
+    border: 1px solid rgba(255, 122, 28, 0.3);
+    border-radius: 10px;
+    padding: 0.7rem 1rem;
+    background: rgba(255, 122, 28, 0.05);
+  }
+  .experimental strong { color: var(--ink); }
+
+  .cta {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 2rem;
+  }
+
+  .btn {
+    display: inline-block;
+    padding: 0.7rem 1.4rem;
+    border-radius: 10px;
+    font-weight: 600;
+    border: 1px solid var(--line);
+    color: var(--ink);
+    background: var(--card);
+    transition: background 0.15s ease, border-color 0.15s ease, transform 0.05s ease;
+  }
+  .btn:hover { background: var(--card-hover); text-decoration: none; }
+  .btn:active { transform: translateY(1px); }
+  .btn.primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #1a1207;
+  }
+  .btn.primary:hover { background: var(--accent-lite); }
+
+  /* ── project cards ──────────────────────────────────────── */
+  .projects {
+    margin-top: clamp(3rem, 8vw, 5rem);
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1rem;
+  }
+
+  .card {
+    display: block;
+    padding: 1.25rem 1.4rem;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: var(--card);
+    color: var(--ink);
+    transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+  }
+  .card:hover {
+    background: var(--card-hover);
+    border-color: rgba(255, 122, 28, 0.45);
+    text-decoration: none;
+    transform: translateY(-2px);
+  }
+
+  .card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+  .card-name { font-weight: 700; font-size: 1.1rem; }
+  .card-tag {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--accent-lite);
+    border: 1px solid rgba(255, 122, 28, 0.3);
+    border-radius: 999px;
+    padding: 0.12rem 0.6rem;
+    white-space: nowrap;
+  }
+  .card-desc { margin: 0.6rem 0 0; color: var(--muted); font-size: 0.95rem; }
+
+  /* ── footer ─────────────────────────────────────────────── */
+  footer {
+    margin-top: clamp(3rem, 8vw, 5rem);
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--line);
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+  footer a { color: var(--muted); }
+  footer a:hover { color: var(--accent-lite); }
+  .dot { margin: 0 0.5rem; opacity: 0.5; }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .wheel-line {
+      transform-box: fill-box;
+      transform-origin: center;
+      animation: spin 24s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  }
+</style>

@@ -1,0 +1,320 @@
+---
+const samples = "https://github.com/veilensapp/veilens/tree/main/examples/vault";
+const tap = "brew install veilensapp/tap/veilens";
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="generator" content={Astro.generator} />
+    <title>Ask your documents — veilens walkthrough</title>
+    <meta
+      name="description"
+      content="A start-to-finish walkthrough: index your own bank statements and ask questions about them — answered entirely on your Mac, with the data never leaving the machine."
+    />
+    <meta property="og:title" content="Ask your own documents — veilens" />
+    <meta
+      property="og:description"
+      content="Index your bank statements and ask questions about them, answered locally. A start-to-finish walkthrough."
+    />
+    <meta property="og:type" content="article" />
+    <meta property="og:url" content="https://veilens.app/walkthrough" />
+  </head>
+  <body>
+    <main>
+      <header class="top">
+        <a class="back" href="/">← veilens</a>
+        <a class="src" href="https://github.com/veilensapp/veilens">veilens ↗</a>
+      </header>
+
+      <section class="intro">
+        <span class="kicker">walkthrough · experimental</span>
+        <h1>Summarize and query your own bank statements</h1>
+        <p class="lede">
+          A start-to-finish example of the <a href="https://github.com/veilensapp/veilens">veilens</a>
+          vault: drop a folder of PDFs on your Mac, index them, and ask
+          open-ended questions — <strong>"how much did I spend on travel last
+          year?", "when does my insurance renew?"</strong> — answered by a
+          frontier model that <strong>writes code but never sees your data</strong>.
+          Everything runs on Apple Silicon; the documents and the answers stay on
+          the machine.
+        </p>
+        <p class="experimental">
+          ⚠︎ <strong>Experimental.</strong> This is an early research flow — the
+          pieces are moving and it isn't ready to trust with data that truly
+          matters yet.
+        </p>
+      </section>
+
+      <!-- ── 1 ─────────────────────────────────────────────────── -->
+      <section class="step">
+        <div class="num">1</div>
+        <div class="body">
+          <h2>Gather your documents</h2>
+          <p>
+            Export your statements from your bank or insurer's website as PDF and
+            drop them in a folder — say <code>~/vault</code>. Bank exports are
+            <em>digital</em> PDFs (a real text layer), which is exactly what the
+            extractor reads. CSVs and Markdown notes work too. Nothing is uploaded
+            anywhere; this folder just sits on your disk.
+          </p>
+          <p class="note">
+            No data of your own to test with? Grab the
+            <a href={samples}>sample vault</a> — a few fictional statements, an
+            insurance policy, and a vehicle registration:
+          </p>
+          <pre><code>git clone https://github.com/veilensapp/veilens
+cp veilens/examples/vault/*.pdf ~/vault</code></pre>
+        </div>
+      </section>
+
+      <!-- ── 2 ─────────────────────────────────────────────────── -->
+      <section class="step">
+        <div class="num">2</div>
+        <div class="body">
+          <h2>Install veilens</h2>
+          <p>
+            Install the <strong><code>veilens</code> CLI</strong> via Homebrew:
+          </p>
+          <pre><code>{tap}</code></pre>
+        </div>
+      </section>
+
+      <!-- ── 3 ─────────────────────────────────────────────────── -->
+      <section class="step">
+        <div class="num">3</div>
+        <div class="body">
+          <h2>Set up the vault</h2>
+          <p>
+            One command installs the whole stack — the inference server (a
+            <strong>chat model</strong> that reads your documents and an
+            <strong>embedding model</strong> for search, both served from one
+            port), the <a href="/headgate">headgate</a> harness, and the veilens vault —
+            reusing anything already installed:
+          </p>
+          <pre><code>veilens install</code></pre>
+          <p class="note">
+            veilens bundles everything it needs — the
+            <a href="https://millrace.app/server">millrace inference server</a>,
+            the headgate harness, and the local vault site — installing each only
+            if it isn't already there.
+          </p>
+        </div>
+      </section>
+
+      <!-- ── 4 ─────────────────────────────────────────────────── -->
+      <section class="step">
+        <div class="num">4</div>
+        <div class="body">
+          <h2>Index your vault</h2>
+          <p>
+            Point veilens at your folder. It chunks each file, embeds the chunks
+            locally, and stores the vectors in an on-device
+            <a href="https://github.com/millrace/lancedb.mojo">LanceDB</a> index —
+            only you ever see the contents:
+          </p>
+          <pre><code>veilens index ~/vault</code></pre>
+          <p class="note">
+            veilens's <strong>manifest</strong> is the only thing the frontier
+            model is ever shown — aliases like <code>file_0 [pdf]</code> and
+            <code>col_2</code>, never names, values, or paths.
+          </p>
+        </div>
+      </section>
+
+      <!-- ── 5 ─────────────────────────────────────────────────── -->
+      <section class="step">
+        <div class="num">5</div>
+        <div class="body">
+          <h2>Ask</h2>
+          <p>
+            Open the vault chat — it brings the server up, launches the chat UI,
+            and points your browser at it. Type a question and the frontier model
+            writes a small program that searches your vault and reads the real
+            text with the on-device model; the answer is computed locally.
+          </p>
+          <pre><code>veilens start       <span class="c"># opens http://localhost:10000</span></code></pre>
+          <p>Prefer the terminal? A one-shot:</p>
+          <pre><code>veilens ask "When does my car insurance renew?"</code></pre>
+          <pre class="out"><code>Your car insurance renews on 2026-09-15.</code></pre>
+          <p class="note">Done for the day? <code>veilens stop</code> shuts the
+          whole stack back down.</p>
+        </div>
+      </section>
+
+      <!-- ── why it's private ──────────────────────────────────── -->
+      <section class="prose">
+        <h2>Why this is private</h2>
+        <p>
+          The powerful model is treated as an <strong>untrusted code generator,
+          not a data processor</strong>. It sees the <em>shape</em> of your vault
+          (the aliased manifest) and writes code; the code runs locally, in a
+          network-denied sandbox that can reach only <code>127.0.0.1</code>. The
+          on-device model is the only thing that reads real content, and the
+          answer is printed on your machine. Your statements never leave the Mac,
+          and never reach the frontier model.
+        </p>
+      </section>
+
+      <footer>
+        <span>© veilens</span>
+        <span class="dot">·</span>
+        <a href="https://github.com/veilensapp/veilens">veilens</a>
+        <span class="dot">·</span>
+        <a href="/headgate">how the harness works →</a>
+      </footer>
+    </main>
+  </body>
+</html>
+
+<style is:global>
+  :root {
+    --bg-top: #284a5c;
+    --bg-bot: #122632;
+    --ink: #eaf1f6;
+    --muted: #9fb4c2;
+    --accent: #ff7a1c;
+    --accent-lite: #ffb05c;
+    --line: rgba(159, 180, 194, 0.18);
+    --card: rgba(255, 255, 255, 0.035);
+  }
+
+  * { box-sizing: border-box; }
+  html { color-scheme: dark; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    color: var(--ink);
+    background:
+      radial-gradient(1200px 600px at 50% -10%, rgba(255, 122, 28, 0.10), transparent 60%),
+      linear-gradient(180deg, var(--bg-top), var(--bg-bot));
+    background-attachment: fixed;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto,
+      Helvetica, Arial, sans-serif;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  a { color: var(--accent-lite); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  main {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: clamp(2rem, 5vw, 4rem) 1.5rem 3rem;
+  }
+
+  .top { display: flex; justify-content: space-between; margin-bottom: 2rem; }
+  .back, .src { color: var(--muted); font-weight: 600; font-size: 0.95rem; }
+  .back:hover, .src:hover { color: var(--accent-lite); }
+
+  .kicker {
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--accent-lite);
+  }
+
+  h1 {
+    font-size: clamp(2rem, 6vw, 3rem);
+    letter-spacing: -0.03em;
+    margin: 0.5rem 0 0;
+    font-weight: 700;
+    background: linear-gradient(180deg, #ffffff, #cedae6);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .lede { margin: 1.2rem 0 0; color: var(--muted); font-size: 1.1rem; }
+  .lede strong, .step strong, .prose strong { color: var(--ink); }
+
+  .experimental {
+    margin: 1.4rem 0 0;
+    padding: 0.85rem 1.1rem;
+    border: 1px solid rgba(255, 122, 28, 0.35);
+    border-radius: 10px;
+    background: rgba(255, 122, 28, 0.07);
+    color: var(--muted);
+    font-size: 0.95rem;
+  }
+  .experimental strong { color: var(--accent-lite); }
+
+  /* ── numbered steps ─────────────────────────────────────── */
+  .step {
+    display: flex;
+    gap: 1.1rem;
+    margin-top: clamp(2rem, 5vw, 2.8rem);
+  }
+  .num {
+    flex: 0 0 auto;
+    width: 2.1rem;
+    height: 2.1rem;
+    border-radius: 999px;
+    display: grid;
+    place-items: center;
+    font-weight: 700;
+    color: #1a1207;
+    background: var(--accent);
+    margin-top: 0.2rem;
+  }
+  .body { min-width: 0; flex: 1; }
+  .body h2 { font-size: 1.35rem; letter-spacing: -0.02em; margin: 0 0 0.5rem; }
+  .body p { color: var(--muted); margin: 0.5rem 0; }
+  .note { font-size: 0.92rem; }
+
+  pre {
+    background: rgba(0, 0, 0, 0.28);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 0.9rem 1.05rem;
+    overflow-x: auto;
+    font-size: 0.86rem;
+    line-height: 1.7;
+    margin: 0.7rem 0;
+  }
+  pre.out {
+    background: rgba(255, 122, 28, 0.06);
+    border-color: rgba(255, 122, 28, 0.3);
+  }
+  code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.92em;
+  }
+  p code, li code, .note code {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    padding: 0.05rem 0.35rem;
+    color: var(--ink);
+  }
+  pre code { background: none; border: 0; padding: 0; color: var(--ink); }
+  pre.out code { color: var(--accent-lite); }
+  pre .c { color: var(--muted); }
+
+  .prose { margin-top: clamp(2.5rem, 6vw, 3.5rem); }
+  .prose h2 {
+    font-size: 1.5rem;
+    letter-spacing: -0.02em;
+    margin: 0 0 0.8rem;
+    padding-bottom: 0.4rem;
+    border-bottom: 1px solid var(--line);
+  }
+  .prose p { color: var(--muted); }
+
+  footer {
+    margin-top: clamp(3rem, 8vw, 5rem);
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--line);
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+  footer a { color: var(--muted); }
+  footer a:hover { color: var(--accent-lite); }
+  .dot { margin: 0 0.5rem; opacity: 0.5; }
+</style>

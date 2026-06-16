@@ -1,0 +1,275 @@
+---
+const cliRepo = "https://github.com/veilensapp/cli";
+const repo = "https://github.com/veilensapp/veilens";
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="generator" content={Astro.generator} />
+    <title>Get started — veilens</title>
+    <meta
+      name="description"
+      content="Install veilens on Apple Silicon — index a folder of your own documents and ask open-ended questions, answered locally. The veilens CLI via Homebrew."
+    />
+    <meta property="og:title" content="Get started with veilens" />
+    <meta
+      property="og:description"
+      content="Install veilens on Apple Silicon — index your own documents and ask questions, answered locally."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://veilens.app/get-started" />
+  </head>
+  <body>
+    <main>
+      <header class="top">
+        <a class="back" href="/">← veilens</a>
+        <a class="src" href={repo}>veilens ↗</a>
+      </header>
+
+      <section class="intro">
+        <h1>Get started</h1>
+        <p class="lede">
+          veilens runs entirely on your Mac (Apple Silicon). Install it with the
+          <strong><code>veilens</code> CLI</strong> via Homebrew, then point it at
+          a folder of documents. Your data never leaves the machine.
+        </p>
+        <p class="experimental">
+          ⚠︎ <strong>Experimental.</strong> veilens is an early research project —
+          not ready to trust with data that truly matters yet.
+        </p>
+      </section>
+
+      <section class="ways">
+        <!-- ── Homebrew CLI ─────────────────────────────────────── -->
+        <article class="way">
+          <div class="way-head">
+            <span class="badge">command line</span>
+            <h2>CLI (Homebrew)</h2>
+          </div>
+          <p>Note: XCode is required, including Metal extensions `xcodebuild -downloadComponent MetalToolchain`</p>
+          <p>Install the <code>veilens</code> CLI from the tap:</p>
+          <pre><code>brew install veilensapp/tap/veilens</code></pre>
+          <p>Then set up the vault and ask:</p>
+          <pre><code><span class="c"># engine + weights + headgate + the local site (one time)</span>
+veilens install
+veilens index ~/vault   <span class="c"># embed your documents on-device</span>
+veilens start           <span class="c"># http://localhost:10000</span>
+veilens stop            <span class="c"># shut it all down when you're done</span>
+
+<span class="c"># or one-shot from the terminal:</span>
+veilens ask "When does my car insurance renew?"</code></pre>
+        </article>
+
+      </section>
+
+      <section class="reqs">
+        <h2>Requirements</h2>
+        <ul>
+          <li>A Mac with <strong>Apple Silicon</strong> (M-series), macOS 14+.</li>
+          <li>The first <code>veilens install</code> downloads several GB of model weights.</li>
+          <li>
+            A frontier-model API key (Anthropic) for the code-generation step —
+            <strong>optional</strong>: with no key, or once a token budget is
+            spent, veilens falls back to the local model. Trusted, free, lower
+            quality — never a hard stop.
+          </li>
+        </ul>
+        <p class="note">
+          New to it? The <a href="/walkthrough">walkthrough</a> runs the whole
+          flow end to end on a sample vault, and <a href="/headgate">headgate</a>
+          explains why your data stays private.
+        </p>
+        <div class="cta">
+          <a class="btn primary" href={cliRepo}>View veilens on GitHub</a>
+          <a class="btn" href={repo}>Source &amp; docs</a>
+        </div>
+      </section>
+
+      <footer>
+        <span>© veilens</span>
+        <span class="dot">·</span>
+        <a href="https://github.com/veilensapp">github.com/veilensapp</a>
+        <span class="dot">·</span>
+        <span>runs on <a href="https://millrace.app">millrace</a></span>
+      </footer>
+    </main>
+  </body>
+</html>
+
+<style is:global>
+  :root {
+    --bg-top: #284a5c;
+    --bg-bot: #122632;
+    --ink: #eaf1f6;
+    --muted: #9fb4c2;
+    --accent: #ff7a1c;
+    --accent-lite: #ffb05c;
+    --line: rgba(159, 180, 194, 0.18);
+    --card: rgba(255, 255, 255, 0.035);
+    --card-hover: rgba(255, 255, 255, 0.07);
+  }
+
+  * { box-sizing: border-box; }
+  html { color-scheme: dark; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    color: var(--ink);
+    background:
+      radial-gradient(1200px 600px at 50% -10%, rgba(255, 122, 28, 0.10), transparent 60%),
+      linear-gradient(180deg, var(--bg-top), var(--bg-bot));
+    background-attachment: fixed;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto,
+      Helvetica, Arial, sans-serif;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  a { color: var(--accent-lite); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  main {
+    max-width: 880px;
+    margin: 0 auto;
+    padding: clamp(2rem, 5vw, 4rem) 1.5rem 3rem;
+  }
+
+  .top { display: flex; justify-content: space-between; margin-bottom: 1.5rem; }
+  .back, .src { color: var(--muted); font-weight: 600; font-size: 0.95rem; }
+  .back:hover, .src:hover { color: var(--accent-lite); }
+
+  h1 {
+    font-size: clamp(2.2rem, 7vw, 3.4rem);
+    letter-spacing: -0.03em;
+    margin: 0;
+    font-weight: 700;
+    background: linear-gradient(180deg, #ffffff, #cedae6);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .lede {
+    max-width: 42rem;
+    margin: 1rem 0 0;
+    color: var(--muted);
+    font-size: 1.05rem;
+  }
+  .lede strong { color: var(--ink); }
+
+  .experimental {
+    max-width: 42rem;
+    margin: 1.25rem 0 0;
+    color: var(--muted);
+    font-size: 0.92rem;
+    border: 1px solid rgba(255, 122, 28, 0.3);
+    border-radius: 10px;
+    padding: 0.6rem 0.9rem;
+    background: rgba(255, 122, 28, 0.05);
+  }
+  .experimental strong { color: var(--ink); }
+
+  /* ── two install paths ──────────────────────────────────── */
+  .ways {
+    margin-top: clamp(2.5rem, 6vw, 4rem);
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 1.25rem;
+    align-items: start;
+  }
+
+  .way {
+    padding: 1.5rem 1.6rem;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: var(--card);
+  }
+  .way-head {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    margin-bottom: 0.4rem;
+  }
+  .way-head h2 { margin: 0; font-size: 1.4rem; letter-spacing: -0.02em; }
+  .way p { color: var(--muted); }
+  .way p strong, .way li strong { color: var(--ink); }
+
+  .badge {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--accent-lite);
+    border: 1px solid rgba(255, 122, 28, 0.3);
+    border-radius: 999px;
+    padding: 0.12rem 0.6rem;
+    white-space: nowrap;
+  }
+
+  .steps { color: var(--muted); padding-left: 1.2rem; margin: 0.5rem 0; }
+  .steps li { margin: 0.35rem 0; }
+
+  .note { font-size: 0.92rem; }
+
+  pre {
+    background: rgba(0, 0, 0, 0.28);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 1rem 1.1rem;
+    overflow-x: auto;
+    font-size: 0.88rem;
+    line-height: 1.7;
+  }
+  code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.92em;
+  }
+  /* inline code */
+  p code, li code, .note code {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    padding: 0.05rem 0.35rem;
+  }
+  pre code { background: none; border: 0; padding: 0; color: var(--ink); }
+  pre .c { color: var(--muted); }
+
+  /* ── requirements ───────────────────────────────────────── */
+  .reqs { margin-top: clamp(2.5rem, 6vw, 4rem); }
+  .reqs h2 { font-size: 1.3rem; letter-spacing: -0.02em; }
+  .reqs ul { color: var(--muted); padding-left: 1.2rem; }
+  .reqs li { margin: 0.3rem 0; }
+  .reqs strong { color: var(--ink); }
+
+  .cta { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 1.75rem; }
+  .btn {
+    display: inline-block;
+    padding: 0.7rem 1.4rem;
+    border-radius: 10px;
+    font-weight: 600;
+    border: 1px solid var(--line);
+    color: var(--ink);
+    background: var(--card);
+    transition: background 0.15s ease, border-color 0.15s ease, transform 0.05s ease;
+  }
+  .btn:hover { background: var(--card-hover); text-decoration: none; }
+  .btn:active { transform: translateY(1px); }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #1a1207; }
+  .btn.primary:hover { background: var(--accent-lite); }
+
+  /* ── footer ─────────────────────────────────────────────── */
+  footer {
+    margin-top: clamp(3rem, 8vw, 5rem);
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--line);
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+  footer a { color: var(--muted); }
+  footer a:hover { color: var(--accent-lite); }
+  .dot { margin: 0 0.5rem; opacity: 0.5; }
+</style>

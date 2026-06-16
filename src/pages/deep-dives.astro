@@ -1,0 +1,213 @@
+---
+const sysPrompt = "https://github.com/veilensapp/headgate/blob/main/resources/headgate-system.md";
+const repo = "https://github.com/veilensapp/headgate";
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="generator" content={Astro.generator} />
+    <title>Deep dive — veilens</title>
+    <meta
+      name="description"
+      content="How veilens works under the hood: a question becomes a sandboxed program the frontier model writes but never gets to run against your data — with the actual generated Mojo."
+    />
+    <meta property="og:title" content="veilens deep dive" />
+    <meta
+      property="og:description"
+      content="A question becomes a program — frontier writes the code, your data stays home."
+    />
+    <meta property="og:type" content="article" />
+    <meta property="og:url" content="https://veilens.app/deep-dives" />
+  </head>
+  <body>
+    <main>
+      <header class="top">
+        <a class="back" href="/">← veilens</a>
+        <a class="src" href={repo}>headgate ↗</a>
+      </header>
+
+      <section class="intro">
+        <span class="kicker">deep dive</span>
+        <h1>A question becomes a program</h1>
+        <p class="lede">
+          veilens lets a powerful <strong>remote</strong> model help with your
+          private data without ever seeing it. The trick — the
+          <a href="/headgate">headgate</a> harness — is to treat the frontier
+          model as an <strong>untrusted code generator, not a data
+          processor</strong>. Here's how one question turns into code that runs on
+          your Mac.
+        </p>
+      </section>
+
+      <!-- ════════════════ headgate ════════════════ -->
+      <section class="prose" id="headgate">
+        <h2>Two asymmetric models</h2>
+        <p>
+          There are two models, deliberately asymmetric:
+        </p>
+        <ul>
+          <li>
+            <strong>The frontier model</strong> (untrusted) is the planner/coder.
+            It sees only a <em>sanitized manifest</em> of your vault — file
+            <em>aliases</em> (<code>file_0</code>), kinds, aliased column schemas
+            (<code>col_2</code>) — never contents, names, or values. From that it
+            writes <strong>one Mojo program</strong> that calls a fixed set of
+            vault tools.
+          </li>
+          <li>
+            <strong>The local model</strong> (trusted, on your device) is the
+            reader. When the program needs to understand content — "is this a
+            travel expense?", "read the renewal date" — it calls
+            <code>ask_local(...)</code>, which runs on the
+            <a href="https://millrace.app/server">millrace inference engine</a> and
+            is the only thing that ever sees real text.
+          </li>
+        </ul>
+        <p>
+          The contract the frontier model is given is a single document — the
+          <a href={sysPrompt}>headgate system prompt</a> — loaded at runtime. It
+          spells out the confidentiality rules, the current Mojo dialect, and the
+          tool surface (<code>search</code>, <code>csv_rows</code>,
+          <code>pdf_text</code>, <code>ask_local</code>, <code>print_answer</code>, …).
+        </p>
+
+        <h3>Example: a question becomes a program</h3>
+        <p>
+          You ask <em>"How much did I spend on travel last year?"</em>. The frontier
+          model — seeing only aliases — writes this, and headgate compiles it and
+          runs it in a sandbox that can reach only your local model:
+        </p>
+        <pre><code><span class="c"># written by the frontier model — it never sees a single real value</span>
+from vault import *
+def main() raises:
+    var hits = search("travel transportation flights hotels expenses", 40)
+    var total = 0.0
+    for c in hits:
+        <span class="c"># ask_local reads the REAL chunk on-device; returns "amount|yes" or "0|no"</span>
+        var verdict = ask_local(
+            "If this is a 2025 travel expense, reply '&lt;amount&gt;|yes', else '0|no'.", c.text)
+        var parts = verdict.split("|")
+        if len(parts) == 2 and String(parts[1]) == "yes":
+            total += atof(String(parts[0]))
+    print_answer("You spent about $" + String(total) + " on travel in 2025.")</code></pre>
+        <p>
+          The frontier model orchestrates over aliases; <code>search</code> and
+          <code>ask_local</code> do the real work locally; the sum is computed on
+          your machine and <code>print_answer</code> surfaces it there. The
+          search results and the answer are <strong>never</strong> returned to the
+          frontier model — which is exactly why the program model is load-bearing,
+          not an implementation detail.
+        </p>
+
+        <h3>Why it holds</h3>
+        <p>
+          Containment lives <em>outside</em> the model, at the OS level. The
+          generated program runs under a Seatbelt profile that <strong>denies all
+          network except loopback</strong> to your local engine — it can't phone
+          home. An egress guard gates every message to the frontier (fails closed),
+          and the compile-feedback loop only ever sends back <em>aliased</em>
+          source, never runtime output that might contain real content. Your
+          documents never leave the Mac, and never reach the frontier model.
+          See the <a href="/walkthrough">walkthrough</a> to try it, or
+          <a href="/headgate">headgate</a> for the full design.
+        </p>
+      </section>
+
+      <footer>
+        <span>© veilens</span>
+        <span class="dot">·</span>
+        <a href="/headgate">headgate →</a>
+        <span class="dot">·</span>
+        <a href="https://millrace.app">runs on millrace ↗</a>
+      </footer>
+    </main>
+  </body>
+</html>
+
+<style is:global>
+  :root {
+    --bg-top: #284a5c;
+    --bg-bot: #122632;
+    --ink: #eaf1f6;
+    --muted: #9fb4c2;
+    --accent: #ff7a1c;
+    --accent-lite: #ffb05c;
+    --line: rgba(159, 180, 194, 0.18);
+    --card: rgba(255, 255, 255, 0.035);
+  }
+
+  * { box-sizing: border-box; }
+  html { color-scheme: dark; scroll-behavior: smooth; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    color: var(--ink);
+    background:
+      radial-gradient(1200px 600px at 50% -10%, rgba(255, 122, 28, 0.10), transparent 60%),
+      linear-gradient(180deg, var(--bg-top), var(--bg-bot));
+    background-attachment: fixed;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto,
+      Helvetica, Arial, sans-serif;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  a { color: var(--accent-lite); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  main { max-width: 760px; margin: 0 auto; padding: clamp(2rem, 5vw, 4rem) 1.5rem 3rem; }
+
+  .top { display: flex; justify-content: space-between; margin-bottom: 2rem; }
+  .back, .src { color: var(--muted); font-weight: 600; font-size: 0.95rem; }
+  .back:hover, .src:hover { color: var(--accent-lite); }
+
+  .kicker {
+    text-transform: uppercase; letter-spacing: 0.08em;
+    font-size: 0.78rem; font-weight: 700; color: var(--accent-lite);
+  }
+  h1 {
+    font-size: clamp(2rem, 6vw, 3rem); letter-spacing: -0.03em;
+    margin: 0.5rem 0 0; font-weight: 700;
+    background: linear-gradient(180deg, #ffffff, #cedae6);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .lede { margin: 1.2rem 0 0; color: var(--muted); font-size: 1.1rem; }
+  .lede strong, .prose strong, li strong { color: var(--ink); }
+
+  .prose { margin-top: clamp(2.5rem, 6vw, 3.5rem); scroll-margin-top: 1.5rem; }
+  .prose h2 {
+    font-size: 1.7rem; letter-spacing: -0.02em; margin: 0 0 0.8rem;
+    padding-bottom: 0.4rem; border-bottom: 1px solid var(--line);
+  }
+  .prose h3 { font-size: 1.15rem; margin: 1.8rem 0 0.4rem; color: var(--ink); }
+  .prose p { color: var(--muted); }
+  .prose ul { color: var(--muted); padding-left: 1.2rem; }
+  .prose li { margin: 0.55rem 0; }
+  .note { font-size: 0.95rem; }
+
+  pre {
+    background: rgba(0, 0, 0, 0.28); border: 1px solid var(--line);
+    border-radius: 10px; padding: 1rem 1.1rem; overflow-x: auto;
+    font-size: 0.82rem; line-height: 1.7; margin: 1.2rem 0;
+  }
+  code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.92em; }
+  p code, li code, .note code, td code {
+    background: rgba(255, 255, 255, 0.06); border: 1px solid var(--line);
+    border-radius: 5px; padding: 0.05rem 0.35rem; color: var(--ink);
+  }
+  pre code { background: none; border: 0; padding: 0; color: var(--ink); }
+  pre .c { color: var(--muted); }
+
+  footer {
+    margin-top: clamp(3rem, 8vw, 5rem); padding-top: 1.5rem;
+    border-top: 1px solid var(--line); text-align: center;
+    color: var(--muted); font-size: 0.9rem;
+  }
+  footer a { color: var(--muted); }
+  footer a:hover { color: var(--accent-lite); }
+  .dot { margin: 0 0.5rem; opacity: 0.5; }
+</style>

@@ -1,0 +1,335 @@
+---
+const repo = "https://github.com/veilensapp/headgate";
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="generator" content={Astro.generator} />
+    <title>headgate — veilens</title>
+    <meta
+      name="description"
+      content="headgate is a privacy harness: a frontier model writes code that runs on your private data locally, in a sandbox that can't phone home. The data never leaves the machine."
+    />
+    <meta property="og:title" content="headgate — the privacy harness" />
+    <meta
+      property="og:description"
+      content="Use a frontier model to write code that runs on private data locally — the data never leaves the machine."
+    />
+    <meta property="og:type" content="article" />
+    <meta property="og:url" content="https://veilens.app/headgate" />
+  </head>
+  <body>
+    <main>
+      <header class="top">
+        <a class="back" href="/">← veilens</a>
+        <a class="src" href={repo}>headgate ↗</a>
+      </header>
+
+      <section class="intro">
+        <span class="kicker">the privacy harness · experimental</span>
+        <h1>The remote model writes code, not reads data</h1>
+        <p class="lede">
+          A <em>headgate</em> is the gate at the intake of a millrace that controls
+          how much water enters the channel. This one is the controlled intake on
+          the data: it lets a powerful <strong>remote model do the thinking while
+          your private data stays on your side of the gate</strong>. The frontier
+          model is treated as an <strong>untrusted code generator, not a data
+          processor</strong> — it sees only the <em>shape</em> of your data and
+          writes code; the code runs locally, in a sandbox, against the real data.
+        </p>
+        <p class="experimental">
+          ⚠︎ <strong>Experimental.</strong> headgate is an early research
+          experiment — the design, threat model, and APIs are still moving and it
+          isn't ready to trust with data that actually matters yet.
+        </p>
+      </section>
+
+      <!-- ── Goal ─────────────────────────────────────────────── -->
+      <section class="prose">
+        <h2>Goal</h2>
+        <p>
+          You have private data and a small, capable <strong>local model</strong>
+          (served by the millrace <a href="https://millrace.app/server">inference server</a>). The
+          local model can reason over your data, but some tasks need a frontier
+          model's code-generation ability. Rather than ship the data out, headgate
+          flips the relationship: the remote model receives a <em>sanitized
+          schema</em> and writes code; that code executes locally and the results
+          stay local. <strong>The data never crosses the gate.</strong>
+        </p>
+        <pre><code>          ┌──────────────────── headgate ─────────────────────┐
+          │ orchestrator · schema sanitizer · egress guard ·   │
+          │ remote codegen client · code sandbox (containment) │
+          └────┬───────────────────────────────────────┬───────┘
+   reason over │ (OpenAI API)            codegen request │ (schema only)
+               ▼                                         ▼
+        inference server                         remote frontier model
+       (local, on-device)                        (untrusted; code only)
+               │ runs generated code ▼
+               │              [ sandbox · network = <span class="hl">deny</span> ]
+               └────────── private / local data ─────────┘</code></pre>
+      </section>
+
+      <!-- ── Design ───────────────────────────────────────────── -->
+      <section class="prose">
+        <h2>Design</h2>
+        <p>
+          <strong>Code is the interface</strong> between the capable-but-untrusted
+          party and the private party — never data. Two roles stay strictly
+          separate: the <em>model runner</em> (the local inference server, which
+          stays harness-agnostic behind the OpenAI API) and the <em>code runner</em>
+          (the sandbox inside headgate that executes the remote model's generated
+          code over real data).
+        </p>
+        <h3>Threat model: the careful SaaS provider</h3>
+        <p>
+          v1 defends against an <strong>honest-but-careless</strong> remote
+          provider — one that won't deliberately smuggle data out, but whose
+          generated code might <em>accidentally</em> leak it (a stray
+          <code>requests.post</code> to telemetry, or a stack trace that echoes a
+          private value back into the next prompt). That model lets us skip the
+          expensive paranoia and concentrate everything on two chokepoints. (A
+          genuinely adversarial provider with covert channels is a later, harder
+          threat model.)
+        </p>
+        <h3>Two guarantees</h3>
+        <ul>
+          <li>
+            <strong>Containment</strong> — owned by the sandbox: generated code
+            cannot reach the network or escape its scope; its output is captured,
+            never self-emitted.
+          </li>
+          <li>
+            <strong>Confidentiality</strong> — owned by headgate: nothing sent to
+            the remote model contains real data. Enforced by schema sanitization +
+            an egress guard, and by debugging against <em>synthetic</em> data shaped
+            like the real schema — the real data is touched only on a final run
+            whose raw output never loops back.
+          </li>
+        </ul>
+        <p class="principles">
+          Guiding principles: <strong>mechanism vs. policy</strong> (the inference
+          server and the sandbox are mechanism; headgate is confidentiality policy
+          on top); <strong>sanitize the schema, not just the values</strong>
+          (column/table names leak on their own, so they're aliased and mapped back
+          locally); and <strong>no silent leaks</strong> (the egress guard fails
+          closed).
+        </p>
+      </section>
+
+      <!-- ── Implementation ───────────────────────────────────── -->
+      <section class="prose">
+        <h2>Implementation</h2>
+        <p>
+          headgate is written in Mojo, in pi-shaped layers — a thin transport
+          chokepoint and core loop over a confidentiality policy over the
+          containment sandbox. The flow for one task:
+        </p>
+        <ol>
+          <li>
+            <strong>Sanitize.</strong> The <em>schema sanitizer</em> derives the
+            schema from the real data, aliases sensitive column/table names, and
+            synthesizes fake sample rows that match the types.
+          </li>
+          <li>
+            <strong>Guarded codegen.</strong> The <em>remote codegen client</em>
+            sends the spec + sanitized schema + synthetic samples to the frontier
+            model (Claude) over <a href="https://github.com/millrace/flare">flare</a>
+            (pure-Mojo HTTP, no curl/Python) and receives code back. Every outbound
+            payload passes the <em>egress guard</em> — a single chokepoint with a
+            real-data fingerprint tripwire, canary detection, and PII redaction —
+            which <strong>fails closed</strong>.
+          </li>
+          <li>
+            <strong>Debug on synthetic data.</strong> The orchestrator compiles and
+            runs the generated code against synthetic data in the sandbox, looping
+            fixes back to the model — all without the real data in scope.
+          </li>
+          <li>
+            <strong>Real run.</strong> Only once it's clean does the code run
+            against the real data; the dealiased result stays local, and its raw
+            output never loops back to the remote model.
+          </li>
+        </ol>
+
+        <h3>Containment: macOS Seatbelt, proven</h3>
+        <p>
+          The sandbox runs generated code under a macOS Seatbelt profile that
+          <strong>denies all network egress</strong>, scopes filesystem reads/writes
+          to canonicalized (<code>realpath</code>) paths, and exposes a tiny
+          capability allowlist via a broker. The containment boundary is verified,
+          not nominal — a 6/6 spike confirms network egress denied, writes scoped,
+          and <code>$HOME</code> reads denied; the Mojo runner then re-proves it
+          end to end (in-scope read works; out-of-scope read and network egress are
+          blocked).
+        </p>
+
+        <h3>Confidentiality through every loop</h3>
+        <p>
+          Because the compile/run feedback loops operate on aliased code and
+          synthetic data, the model never sees a real value or name. The schema
+          sanitizer (<code>schema.mojo</code>) handles type inference + aliasing +
+          dealiasing; the egress guard (<code>egress.mojo</code>) is the outbound
+          tripwire; the sandbox + broker (<code>sandbox.mojo</code>,
+          <code>broker.mojo</code>) own containment; the orchestrator
+          (<code>orchestrator.mojo</code>) drives the synthetic-debug → real-run
+          loop.
+        </p>
+
+        <h3>Budget with local fallback</h3>
+        <p>
+          A token budget caps spend on the frontier model (charged from the API's
+          <code>usage</code>). Once depleted — or when there's no API key at all —
+          codegen and fixes route to the <strong>local model</strong> instead of
+          failing: trusted, free, lower quality. So headgate degrades gracefully to
+          a fully local, fully private mode rather than stopping.
+        </p>
+      </section>
+
+      <footer>
+        <span>© veilens</span>
+        <span class="dot">·</span>
+        <a href={repo}>headgate</a>
+        <span class="dot">·</span>
+        <a href="/walkthrough">try the walkthrough →</a>
+      </footer>
+    </main>
+  </body>
+</html>
+
+<style is:global>
+  :root {
+    --bg-top: #284a5c;
+    --bg-bot: #122632;
+    --ink: #eaf1f6;
+    --muted: #9fb4c2;
+    --accent: #ff7a1c;
+    --accent-lite: #ffb05c;
+    --line: rgba(159, 180, 194, 0.18);
+    --card: rgba(255, 255, 255, 0.035);
+    --card-hover: rgba(255, 255, 255, 0.07);
+  }
+
+  * { box-sizing: border-box; }
+  html { color-scheme: dark; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    color: var(--ink);
+    background:
+      radial-gradient(1200px 600px at 50% -10%, rgba(255, 122, 28, 0.10), transparent 60%),
+      linear-gradient(180deg, var(--bg-top), var(--bg-bot));
+    background-attachment: fixed;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto,
+      Helvetica, Arial, sans-serif;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  a { color: var(--accent-lite); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  main {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: clamp(2rem, 5vw, 4rem) 1.5rem 3rem;
+  }
+
+  .top { display: flex; justify-content: space-between; margin-bottom: 2rem; }
+  .back, .src { color: var(--muted); font-weight: 600; font-size: 0.95rem; }
+  .back:hover, .src:hover { color: var(--accent-lite); }
+
+  .kicker {
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--accent-lite);
+  }
+
+  h1 {
+    font-size: clamp(1.9rem, 5.5vw, 2.9rem);
+    letter-spacing: -0.03em;
+    margin: 0.5rem 0 0;
+    font-weight: 700;
+    background: linear-gradient(180deg, #ffffff, #cedae6);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .lede {
+    margin: 1.2rem 0 0;
+    color: var(--muted);
+    font-size: 1.1rem;
+  }
+  .lede strong, .prose strong, li strong { color: var(--ink); }
+
+  .experimental {
+    margin: 1.4rem 0 0;
+    padding: 0.85rem 1.1rem;
+    border: 1px solid rgba(255, 122, 28, 0.35);
+    border-radius: 10px;
+    background: rgba(255, 122, 28, 0.07);
+    color: var(--muted);
+    font-size: 0.95rem;
+  }
+  .experimental strong { color: var(--accent-lite); }
+
+  .prose { margin-top: clamp(2.5rem, 6vw, 3.5rem); }
+  .prose h2 {
+    font-size: 1.6rem;
+    letter-spacing: -0.02em;
+    margin: 0 0 0.8rem;
+    padding-bottom: 0.4rem;
+    border-bottom: 1px solid var(--line);
+  }
+  .prose h3 {
+    font-size: 1.12rem;
+    margin: 1.8rem 0 0.4rem;
+    color: var(--ink);
+  }
+  .prose p { color: var(--muted); }
+  .prose ul, .prose ol { color: var(--muted); padding-left: 1.2rem; }
+  .prose li { margin: 0.55rem 0; }
+  .principles { font-size: 0.97rem; }
+
+  pre {
+    background: rgba(0, 0, 0, 0.28);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 1rem 1.1rem;
+    overflow-x: auto;
+    font-size: 0.78rem;
+    line-height: 1.65;
+    margin: 1.2rem 0;
+  }
+  code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.92em;
+  }
+  p code, li code, h3 code {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    padding: 0.05rem 0.35rem;
+    color: var(--ink);
+  }
+  pre code { background: none; border: 0; padding: 0; color: var(--muted); }
+  pre .hl { color: var(--accent); font-weight: 700; }
+
+  footer {
+    margin-top: clamp(3rem, 8vw, 5rem);
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--line);
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+  footer a { color: var(--muted); }
+  footer a:hover { color: var(--accent-lite); }
+  .dot { margin: 0 0.5rem; opacity: 0.5; }
+</style>
